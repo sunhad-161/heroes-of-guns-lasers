@@ -4,4 +4,7 @@ libs:
 -pygame
 
 classes & methods:
-...
+-Prop
+--move
+--render
+--vector
