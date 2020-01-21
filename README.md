@@ -8,3 +8,12 @@ classes & methods:
 --move
 --render
 --vector
+-Player(Prop)
+-Cursor(Prop)
+--move
+-Bullet(Prop)
+--check
+--delete
+
+functions:
+-count_vector
