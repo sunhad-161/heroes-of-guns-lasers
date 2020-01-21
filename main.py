@@ -1,30 +1,5 @@
 import pygame
-from props import Prop
-
-
-class Player(Prop):
-    def __init__(self, x, y, size, image):
-        super().__init__(x, y, size, size, image)
-
-
-class Cursor(Prop):
-    def __init__(self, x, y, size, image):
-        super().__init__(x, y, size, size, image)
-
-    def move(self, x, y):
-        self.x = x
-        self.y = y
-        super().render(screen)
-
-
-class Bullet(Prop):
-    def __init__(self, x, y, size, image):
-        super().__init__(x, y, size, size, image)
-
-    def check(self, screen):
-        if (self.x < 0 or self.x >= 1280) or (self.y < 0 or self.y >= 720):
-            bullets.insert(bullets.index(self))
-        self.move(screen)
+import props
 
 
 pygame.init()
@@ -38,8 +13,8 @@ pygame.mixer.music.play(-1)
 
 running = True
 clock = pygame.time.Clock()
-player = Player(width // 2, height // 2, 32, (255, 0, 0))
-cur = Cursor(0, 0, 4, (0, 255, 0))
+pl = props.Player(width // 2, height // 2, (255, 0, 0))
+cur = props.Cursor(0, 0, (0, 255, 0))
 bullets = list()
 pygame.mouse.set_visible(False)
 while running:
@@ -48,33 +23,37 @@ while running:
             running = False
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
-                player.vector(0, -9)
+                pl.vector(0, -9)
             if event.key == pygame.K_LEFT:
-                player.vector(-9, 0)
+                pl.vector(-9, 0)
             if event.key == pygame.K_DOWN:
-                player.vector(0, 9)
+                pl.vector(0, 9)
             if event.key == pygame.K_RIGHT:
-                player.vector(9, 0)
+                pl.vector(9, 0)
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_UP:
-                player.vector(0, 9)
+                pl.vector(0, 9)
             if event.key == pygame.K_LEFT:
-                player.vector(9, 0)
+                pl.vector(9, 0)
             if event.key == pygame.K_DOWN:
-                player.vector(0, -9)
+                pl.vector(0, -9)
             if event.key == pygame.K_RIGHT:
-                player.vector(-9, 0)
+                pl.vector(-9, 0)
         if event.type == pygame.MOUSEMOTION:
-            cur.move(*event.pos)
+            cur.move(*event.pos, screen)
         if event.type == pygame.MOUSEBUTTONDOWN:
-            center = (player.x + player.width // 2, player.y + player.height // 2)
-            bullets.append(Bullet(*center, 4, (200, 200, 0)))
-            bullets[-1].vector(16, 16)
+            center = (pl.x + pl.width // 2, pl.y + pl.height // 2)
+            bullets.append(props.Bullet(*center, (200, 200, 0)))
+            b_vector = props.count_vectors(pl.x + pl.width // 2, pl.y + pl.height // 2,
+                                           cur.x + cur.width // 2, cur.y + cur.height // 2,
+                                           12, bullets[-1])
+            if b_vector:
+                bullets[-1].vector(*b_vector)
     screen.fill((0, 0, 0))
-    player.move(screen)
+    pl.move(screen)
     cur.render(screen)
     for bul in bullets:
-        bul.check(screen)
+        bul.check(screen, bullets)
     clock.tick(80)
     pygame.display.flip()
 pygame.quit()

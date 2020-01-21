@@ -1,7 +1,7 @@
 import pygame
 
 
-class Prop():
+class Prop:
     def __init__(self, x, y, width, height, image):
         self.x = x
         self.y = y
@@ -23,3 +23,42 @@ class Prop():
         self.x += self.x_vector
         self.y += self.y_vector
         self.render(screen)
+
+class Player(Prop):
+    def __init__(self, x, y,image):
+        super().__init__(x, y, 32, 32, image)
+
+
+class Cursor(Prop):
+    def __init__(self, x, y, image):
+        super().__init__(x, y, 4, 4, image)
+
+    def move(self, x, y, screen):
+        self.x = x
+        self.y = y
+        super().render(screen)
+
+
+class Bullet(Prop):
+    def __init__(self, x, y, image):
+        super().__init__(x, y, 4, 4, image)
+
+    def check(self, screen, arrey):
+        if (self.x < 0 or self.x >= 1280) or (self.y < 0 or self.y >= 720):
+            self.delete(arrey)
+        self.move(screen)
+
+    def delete(self, arrey):
+        arrey.remove(self)
+
+
+def count_vectors(x_1, y_1, x_2, y_2, v, object):
+    v_x = x_2 - x_1
+    v_y = y_2 - y_1
+    l = (v_x**2 + v_y**2)**0.5
+    if v != 0:
+        k = v / l
+        return k * v_x, k * v_y
+    else:
+        object.delete()
+        return False
