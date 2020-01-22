@@ -24,6 +24,9 @@ class Prop:
         self.y += self.y_vector
         self.render(screen)
 
+    def delete(self, arrey):
+        arrey.remove(self)
+
 class Player(Prop):
     def __init__(self, x, y,image):
         super().__init__(x, y, 32, 32, image)
@@ -43,13 +46,29 @@ class Bullet(Prop):
     def __init__(self, x, y, image):
         super().__init__(x, y, 4, 4, image)
 
-    def check(self, screen, arrey):
+    def check(self, screen, arrey_1, arrey_2):
         if (self.x < 0 or self.x >= 1280) or (self.y < 0 or self.y >= 720):
-            self.delete(arrey)
+            self.delete(arrey_1)
+        else:
+            for en in arrey_2:
+                if ((self.x + self.width > en.x and self.x < en.x + en.width) and
+                    (self.y + self.height > en.y and self.y < en.x + en.height)):
+                    en.hp -= 1
+                    self.delete(arrey_1)
         self.move(screen)
 
-    def delete(self, arrey):
-        arrey.remove(self)
+class Enemy(Prop):
+    def __init__(self, x, y, image, health):
+        super().__init__(x, y, 32, 32, image)
+        self.health = health
+        self.hp = health
+
+    def check(self, arrey):
+        if self.hp <= 0:
+            self.delete(arrey)
+            return False
+        else:
+            return True
 
 
 def count_vectors(x_1, y_1, x_2, y_2, v, object):
