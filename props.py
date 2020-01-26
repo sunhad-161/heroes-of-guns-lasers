@@ -52,7 +52,7 @@ class Bullet(Prop):
         else:
             for en in arrey_2:
                 if ((self.x + self.width > en.x and self.x < en.x + en.width) and
-                    (self.y + self.height > en.y and self.y < en.x + en.height)):
+                    (self.y + self.height > en.y and self.y < en.y + en.height)):
                     en.hp -= 1
                     self.delete(arrey_1)
         self.move(screen)

@@ -1,5 +1,6 @@
 import pygame
 import props
+import windows
 from random import choice
 
 
@@ -17,9 +18,11 @@ clock = pygame.time.Clock()
 pl = props.Player(width // 2, height // 2, (45, 200, 200))
 cur = props.Cursor(0, 0, (0, 255, 0))
 bullets = list()
-pygame.mouse.set_visible(False)
+b = windows.Button(320, 250, 280, 110)
+b.set_text('Start')
+window = 'main'
 
-count = int(input())
+count = 5
 enemis = list()
 for i in range(count):
     x, y = choice(range(width)), choice(range(height))
@@ -50,21 +53,30 @@ while running:
         if event.type == pygame.MOUSEMOTION:
             cur.move(*event.pos, screen)
         if event.type == pygame.MOUSEBUTTONDOWN:
-            center = (pl.x + pl.width // 2, pl.y + pl.height // 2)
-            bullets.append(props.Bullet(*center, (230, 200, 0)))
-            b_vector = props.count_vectors(pl.x + pl.width // 2, pl.y + pl.height // 2,
-                                           cur.x + cur.width // 2, cur.y + cur.height // 2,
-                                           12, bullets[-1])
-            if b_vector:
-                bullets[-1].vector(*b_vector)
+            if window == 'game':
+                center = (pl.x + pl.width // 2, pl.y + pl.height // 2)
+                bullets.append(props.Bullet(*center, (230, 200, 0)))
+                b_vector = props.count_vectors(pl.x + pl.width // 2, pl.y + pl.height // 2,
+                                               cur.x + cur.width // 2, cur.y + cur.height // 2,
+                                               12, bullets[-1])
+                if b_vector:
+                    bullets[-1].vector(*b_vector)
+            elif window == 'main':
+                if b.check(*event.pos):
+                    window = 'game'
     screen.fill((25, 25, 25))
-    pl.move(screen)
-    cur.render(screen)
-    for bul in bullets:
-        bul.check(screen, bullets, enemis)
-    for en in enemis:
-        if en.check(enemis):
-            en.render(screen)
+    if window == 'game':
+        pygame.mouse.set_visible(False)
+        pl.move(screen)
+        for bul in bullets:
+            bul.check(screen, bullets, enemis)
+        for en in enemis:
+            if en.check(enemis):
+                en.render(screen)
+        cur.render(screen)
+    elif window == 'main':
+        pygame.mouse.set_visible(True)
+        b.render(screen)
     clock.tick(80)
     pygame.display.flip()
 pygame.quit()
