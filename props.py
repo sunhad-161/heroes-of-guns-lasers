@@ -1,4 +1,5 @@
 import pygame
+from random import choice
 
 
 class Prop:
@@ -24,8 +25,12 @@ class Prop:
         self.y += self.y_vector
         self.render(screen)
 
+    def delete(self, array):
+        array.remove(self)
+
+
 class Player(Prop):
-    def __init__(self, x, y,image):
+    def __init__(self, x, y, image):
         super().__init__(x, y, 32, 32, image)
 
 
@@ -43,22 +48,44 @@ class Bullet(Prop):
     def __init__(self, x, y, image):
         super().__init__(x, y, 4, 4, image)
 
-    def check(self, screen, arrey):
+    def check(self, screen, array_1, array_2):
         if (self.x < 0 or self.x >= 1280) or (self.y < 0 or self.y >= 720):
-            self.delete(arrey)
+            self.delete(array_1)
+        else:
+            for en in array_2:
+                if ((self.x + self.width > en.x and self.x < en.x + en.width) and
+                   (self.y + self.height > en.y and self.y < en.y + en.height)):
+                    en.hp -= 1
+                    self.delete(array_1)
         self.move(screen)
 
-    def delete(self, arrey):
-        arrey.remove(self)
+
+class Enemy(Prop):
+    def __init__(self, x, y, image, health):
+        super().__init__(x, y, 32, 32, image)
+        self.health = health
+        self.hp = health
+
+    def check(self, array):
+        if self.hp <= 0:
+            self.delete(array)
+            return False
+        else:
+            return True
 
 
-def count_vectors(x_1, y_1, x_2, y_2, v, object):
+class Wall(Prop):
+    def __init__(self, x, y, image):
+        super().__init__(x, y, 32, 32, image)
+
+
+def count_vectors(x_1, y_1, x_2, y_2, v, subject):
     v_x = x_2 - x_1
     v_y = y_2 - y_1
-    l = (v_x**2 + v_y**2)**0.5
+    distance = (v_x**2 + v_y**2)**0.5
     if v != 0:
-        k = v / l
+        k = v / distance
         return k * v_x, k * v_y
     else:
-        object.delete()
+        subject.delete()
         return False
