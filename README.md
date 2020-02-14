@@ -2,18 +2,29 @@
 
 libs:
 -pygame
+-os
+-random
 
 classes & methods:
--Prop
+-Prop(Sprite)
 --move
---render
 --vector
+--delete
 -Player(Prop)
 -Cursor(Prop)
---move
 -Bullet(Prop)
+-Enemy(Prop)
+--hunt;
+-Button
+--render
+--set_text
 --check
---delete
+-WeaponBar
+--render
 
 functions:
 -count_vector
+-load_image
+-generate_level
+-load_level
+
