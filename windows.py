@@ -1,4 +1,9 @@
 import pygame
+from props import load_image
+
+
+def konami():
+    pass
 
 
 class Button:
@@ -31,6 +36,9 @@ class Button:
 class WeaponBar:
     def __init__(self, weapon):
         self.info = weapon
+
+    def render(self, screen):
+        pygame.draw.rect(screen, (0, 0, 0), (0, 576, 64, 64), width=1)
 
 
 class LevelBar:
