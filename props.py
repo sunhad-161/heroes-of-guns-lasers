@@ -1,5 +1,6 @@
 import pygame
 from random import choice
+from windows import load_image, end
 import os
 
 for current_dir, dirs, files in os.walk('data/rooms'):
@@ -34,6 +35,9 @@ def generate_level(level, room, l, t, r, b):
                     room[x][y] = Door((room.all_props, room.walls), y, x)
                 else:
                     room[x][y] = Wall(room.walls, y, x)
+            elif level[x][y] == 'B':
+                room[x][y] = Boss(room.en_props, y, x, bosses[defeated_bosses] + '.png')
+                room[x][y] = Ground(room.all_props, y, x)
     return x, y
 
 
@@ -59,18 +63,6 @@ def count_vectors(x_1, y_1, x_2, y_2, v):
         return k * v_x, k * v_y
     else:
         return False
-
-
-def load_image(name, color_key=None):
-    fullname = os.path.join('data', 'sprite', name)
-    image = pygame.image.load(fullname).convert()
-    if color_key is not None:
-        if color_key == -1:
-            color_key = image.get_at((0, 0))
-        image.set_colorkey(color_key)
-    else:
-        image = image.convert_alpha()
-    return image
 
 
 # основной класс
@@ -131,6 +123,7 @@ class Player(Prop):
                 if self.flag:
                     self.konami.append(event.key)
                     self.flag = False
+                    print(self.konami)
                 if len(self.konami) > 10:
                     self.konami.remove(self.konami[0])
         if pygame.sprite.spritecollideany(self, walls):
@@ -191,16 +184,16 @@ class Bullet(Prop):
         if pygame.sprite.spritecollideany(self, walls):
             self.delete(player)
         for enemy in en_props.spritedict:
-            if ((enemy.rect.x <= self.rect.x <= enemy.rect.x + prop_width) and
-                    (enemy.rect.y <= self.rect.y <= enemy.rect.y + prop_height)):
+            if ((enemy.rect.x <= self.rect.x <= enemy.rect.x + enemy.rect.width) and
+                    (enemy.rect.y <= self.rect.y <= enemy.rect.y + enemy.rect.height)):
                 enemy.hp -= 1
                 self.delete(player)
         self.move()
 
 
 class Enemy(Prop):
-    def __init__(self, group, x, y, health):
-        image = load_image('ghost.png', -1)
+    def __init__(self, group, x, y, health, image_name='ghost.png'):
+        image = load_image(image_name, -1)
         super().__init__(group, x * prop_width, y * prop_height, image)
         self.health = health
         self.hp = health
@@ -209,15 +202,27 @@ class Enemy(Prop):
     def update(self, *args):
         if self.hp <= 0:
             self.delete(self.group)
-            return False
-        else:
-            return True
 
     def hunt(self, x, y):
         vector = count_vectors(self.rect.x, self.rect.y, x, y, 2)
         if vector:
             self.x_vector, self.y_vector = vector
         self.move()
+
+
+class Boss(Enemy):
+    def __init__(self, group, x, y, image):
+        super().__init__(group, x, y, 20, image)
+
+    def update(self, *args):
+        if self.hp <= 0:
+            global current_room, current_floor, defeated_bosses
+            self.delete(self.group)
+            defeated_bosses += 1
+            current_floor = list()
+            init()
+            current_room = [5, 1]
+            current_floor[5][1].load()
 
 
 class Wall(Prop):
@@ -239,7 +244,7 @@ class Door(Prop):
         self.locked = locked
 
     def update(self, *args):
-        if not bool(en_props) or not self.locked:
+        if not bool(en_props) and self.locked:
             self.locked = False
             self.image = load_image('floor.png')
             self.delete(walls)
@@ -304,3 +309,5 @@ def init():
 
 current_floor = list()
 current_room = [5, 1]
+defeated_bosses = 0
+bosses = ['ghost_boss', 'red_wizard', 'robot', None]
