@@ -7,15 +7,19 @@ import music
 def draw(up):
     props.walls.draw(screen)
     props.all_props.draw(screen)
+    props.bullets.draw(screen)
     props.en_props.draw(screen)
     props.player.draw(screen)
+    props.cursor.draw(screen)
+    props.cursor.update(event)
     if up:
         props.player.update(event)
         props.all_props.update(event)
         props.en_props.update(event)
+        props.bullets.update(event)
         pl.move()
-    for en in props.en_props.spritedict:
-        en.hunt(pl.rect.x, pl.rect.y)
+        for en in props.en_props.spritedict:
+            en.hunt(pl.rect.x, pl.rect.y)
 
 
 def konami():
@@ -39,9 +43,11 @@ screen = pygame.display.set_mode(size)
 props.init()
 pygame.mixer.music.play(-1)
 
+windows.end(screen)
+
 running = True
 clock = pygame.time.Clock()
-pl = props.Player(width // 2, height // 2)
+pl = props.Player(width // 2, height // 2, 10)
 buttons = list()
 buttons.append(windows.Button(250, 250, 280, 110, 'Start'))
 buttons.append(windows.Button(250, 400, 280, 110, 'Exit'))
@@ -69,10 +75,24 @@ while running:
                 pl.update(event)
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 x, y = pl.rect.x + pl.rect.width // 2, pl.rect.y + pl.rect.height // 2
-                props.Bullet(props.current_floor[props.current_room[0]][props.current_room[1]], x, y, *event.pos)
+                props.Bullet(x, y, *event.pos)
+        elif event.type == pygame.MOUSEBUTTONDOWN and window == 'konami':
+            if buttons[0].check(*event.pos):
+                props.defeated_bosses = 0
+            elif buttons[1].check(*event.pos):
+                props.defeated_bosses = 1
+            elif buttons[2].check(*event.pos):
+                props.defeated_bosses = 2
+            props.current_floor = list()
+            props.init()
+            props.current_room = [0, 2]
+            props.current_floor[0][2].load()
+            window = 'game'
+            pygame.mouse.set_visible(False)
+            pl.konami = list()
     screen.fill((25, 25, 25))
     if window == 'game':
-        if props.defeated_bosses != 3:
+        if props.defeated_bosses != 3 and bool(props.player):
             draw(True)
         else:
             draw(False)

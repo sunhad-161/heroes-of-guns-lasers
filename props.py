@@ -1,6 +1,5 @@
-import pygame
 from random import choice
-from windows import load_image, end
+from windows import *
 import os
 
 for current_dir, dirs, files in os.walk('data/rooms'):
@@ -8,9 +7,11 @@ for current_dir, dirs, files in os.walk('data/rooms'):
 
 prop_width = prop_height = 64
 player = pygame.sprite.Group()
+bullets = pygame.sprite.Group()
 walls = pygame.sprite.Group()
 all_props = pygame.sprite.Group()
 en_props = pygame.sprite.Group()
+cursor = pygame.sprite.Group()
 
 
 def generate_level(level, room, l, t, r, b):
@@ -23,7 +24,7 @@ def generate_level(level, room, l, t, r, b):
                 room[x][y] = Ground(room.all_props, y, x)
             elif level[x][y] == 'E':
                 room[x][y] = Ground(room.all_props, y, x)
-                room[x][y] = Enemy(room.en_props, y, x, 5)
+                room[x][y] = Enemy(room.en_props, y, x, 5, 1)
             elif level[x][y] == 'D':
                 if x == 0 and t:
                     room[x][y] = Door((room.all_props, room.walls), y, x)
@@ -91,11 +92,13 @@ class Prop(pygame.sprite.Sprite):
 
 
 class Player(Prop):
-    def __init__(self, x, y):
+    def __init__(self, x, y, health):
         image = load_image('knight.png', -1)
         super().__init__(player, x, y, image)
         self.event = 0
         self.speed = 6
+        self.max_health = health
+        self.current_health = health
         self.konami = list()
         self.button = None
         self.flag = True
@@ -155,12 +158,14 @@ class Player(Prop):
             x, y = current_room
             current_floor[x][y].load()
             self.rect.y = 70
+        if self.current_health <= 0:
+            self.delete(player)
 
 
 class Cursor(Prop):
     def __init__(self, x, y):
         image = load_image('aim.png', -1)
-        super().__init__(player, x, y, image)
+        super().__init__(cursor, x, y, image)
 
     def update(self, *args):
         event = args[0]
@@ -171,9 +176,9 @@ class Cursor(Prop):
 
 
 class Bullet(Prop):
-    def __init__(self, room, x, y, c_x, c_y):
+    def __init__(self, x, y, c_x, c_y):
         image = load_image('bullet.png', -1)
-        super().__init__(player, x, y, image)
+        super().__init__(bullets, x, y, image)
         vector = count_vectors(x, y, c_x, c_y, 12)
         if vector:
             self.x_vector, self.y_vector = vector
@@ -181,27 +186,29 @@ class Bullet(Prop):
             self.delete(player)
 
     def update(self, *args):
-        if pygame.sprite.spritecollideany(self, walls):
-            self.delete(player)
-        for enemy in en_props.spritedict:
-            if ((enemy.rect.x <= self.rect.x <= enemy.rect.x + enemy.rect.width) and
-                    (enemy.rect.y <= self.rect.y <= enemy.rect.y + enemy.rect.height)):
-                enemy.hp -= 1
-                self.delete(player)
+        if pygame.sprite.spritecollideany(self, walls) \
+                or pygame.sprite.spritecollideany(self, en_props):
+            self.delete(bullets)
         self.move()
 
 
 class Enemy(Prop):
-    def __init__(self, group, x, y, health, image_name='ghost.png'):
+    def __init__(self, group, x, y, health, damage, image_name='ghost.png'):
         image = load_image(image_name, -1)
         super().__init__(group, x * prop_width, y * prop_height, image)
-        self.health = health
-        self.hp = health
+        self.max_health = health
+        self.current_health = health
+        self.damage = damage
         self.group = group
 
     def update(self, *args):
-        if self.hp <= 0:
+        if pygame.sprite.spritecollideany(self, bullets):
+            self.current_health -= 1
+        if self.current_health <= 0:
             self.delete(self.group)
+        if pygame.sprite.spritecollideany(self, player):
+            for sub in player.spritedict:
+                sub.current_health -= self.damage
 
     def hunt(self, x, y):
         vector = count_vectors(self.rect.x, self.rect.y, x, y, 2)
@@ -212,17 +219,23 @@ class Enemy(Prop):
 
 class Boss(Enemy):
     def __init__(self, group, x, y, image):
-        super().__init__(group, x, y, 20, image)
+        super().__init__(group, x, y, 20, 5, image)
 
     def update(self, *args):
-        if self.hp <= 0:
+        if pygame.sprite.spritecollideany(self, bullets):
+            self.current_health -= 1
+        if self.current_health <= 0:
             global current_room, current_floor, defeated_bosses
             self.delete(self.group)
             defeated_bosses += 1
-            current_floor = list()
-            init()
-            current_room = [5, 1]
-            current_floor[5][1].load()
+            if defeated_bosses < 3:
+                current_floor = list()
+                init()
+                current_room = [5, 1]
+                current_floor[5][1].load()
+        if pygame.sprite.spritecollideany(self, player):
+            for sub in player.spritedict:
+                sub.current_health -= self.damage
 
 
 class Wall(Prop):
