@@ -41,27 +41,47 @@ class Button:
             return False
 
 
-class WeaponBar:
-    def __init__(self, weapon):
-        self.info = weapon
+class HealthBar:
+    def __init__(self, subject):
+        self.width = subject.rect.width
+        self.height = 4
+        self.subject = subject
 
     def render(self, screen):
-        pygame.draw.rect(screen, (0, 0, 0), (0, 576, 64, 64), width=1)
+        x, y = self.subject.rect.x, self.subject.rect.y - self.height
+        hp = self.subject.current_health / self.subject.max_health
+        pygame.draw.rect(screen, (0, 255, 0), (x, y, self.width * hp, self.height), 0)
+        pygame.draw.rect(screen, (255, 0, 0), (x + self.width * hp, y,
+                                               self.width * (1 - hp), self.height), 0)
 
 
-class LevelBar:
+class Ammunition:
     def __init__(self):
-        self.xp = 0
+        self.ammo = 6
+        self.full = load_image('full_bullet.png', -1)
+        self.empty = load_image('empty_bullet.png', -1)
+
+    def reload(self):
+        self.ammo = 6
+
+    def lose(self):
+        self.ammo -= 1
+
+    def render(self, screen):
+        for i in range(1, 7):
+            if i <= self.ammo:
+                screen.blit(self.full, (37 * i, 576))
+            else:
+                screen.blit(self.empty, (37 * i, 576))
 
 
-class HealthBar:
-    def __init__(self, x, y, size, subject=0):
-        self.width = size
-
-
-def end(screen):
+def end(screen, win):
+    if win:
+        text = 'You win!'
+    else:
+        text = 'You lose('
     font = pygame.font.Font(None, 50)
-    text = font.render('The end', 1, (140, 90, 90))
+    text = font.render(text, 1, (140, 90, 90))
     text_w = text.get_width() + 300
     text_h = text.get_height() + 430
     screen.blit(text, (text_w, text_h))

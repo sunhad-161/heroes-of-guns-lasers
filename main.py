@@ -10,6 +10,8 @@ def draw(up):
     props.bullets.draw(screen)
     props.en_props.draw(screen)
     props.player.draw(screen)
+    pl.gun.render(screen)
+    pl.bar.render(screen)
     props.cursor.draw(screen)
     props.cursor.update(event)
     if up:
@@ -20,6 +22,7 @@ def draw(up):
         pl.move()
         for en in props.en_props.spritedict:
             en.hunt(pl.rect.x, pl.rect.y)
+            en.bar.render(screen)
 
 
 def konami():
@@ -42,8 +45,6 @@ music.main_menu()
 screen = pygame.display.set_mode(size)
 props.init()
 pygame.mixer.music.play(-1)
-
-windows.end(screen)
 
 running = True
 clock = pygame.time.Clock()
@@ -74,8 +75,7 @@ while running:
             if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
                 pl.update(event)
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                x, y = pl.rect.x + pl.rect.width // 2, pl.rect.y + pl.rect.height // 2
-                props.Bullet(x, y, *event.pos)
+                pl.shoot(*event.pos)
         elif event.type == pygame.MOUSEBUTTONDOWN and window == 'konami':
             if buttons[0].check(*event.pos):
                 props.defeated_bosses = 0
@@ -96,13 +96,16 @@ while running:
             draw(True)
         else:
             draw(False)
-            windows.end(screen)
+            if props.defeated_bosses == 3:
+                windows.end(screen, True)
+            else:
+                windows.end(screen, False)
         if pl.konami == [273, 273, 274, 274, 276, 275, 276, 275, 98, 97]:
             print('pass')
             konami()
     elif window == 'main' or window == 'konami':
         for i in buttons:
             i.render(screen)
-    clock.tick(60)
+    clock.tick(80)
     pygame.display.flip()
 pygame.quit()

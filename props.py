@@ -1,6 +1,6 @@
 from random import choice
 from windows import *
-import os
+from music import *
 
 for current_dir, dirs, files in os.walk('data/rooms'):
     all_rooms = files
@@ -78,6 +78,8 @@ class Prop(pygame.sprite.Sprite):
         self.x_vector = 0
         self.y_vector = 0
 
+        self.gun = Ammunition()
+
     def vector(self, x, y):
         self.x_vector += x
         self.y_vector += y
@@ -95,13 +97,19 @@ class Player(Prop):
     def __init__(self, x, y, health):
         image = load_image('knight.png', -1)
         super().__init__(player, x, y, image)
-        self.event = 0
+
         self.speed = 6
         self.max_health = health
         self.current_health = health
+
         self.konami = list()
+        self.event = 0
         self.button = None
         self.flag = True
+
+        self.gun = Ammunition()
+        self.cooldown = pygame.time.get_ticks()
+        self.bar = HealthBar(self)
 
     def update(self, *args):
         if args:
@@ -126,7 +134,6 @@ class Player(Prop):
                 if self.flag:
                     self.konami.append(event.key)
                     self.flag = False
-                    print(self.konami)
                 if len(self.konami) > 10:
                     self.konami.remove(self.konami[0])
         if pygame.sprite.spritecollideany(self, walls):
@@ -138,6 +145,13 @@ class Player(Prop):
                 self.rect.y -= self.speed
             elif self.rect.y % prop_height >= self.speed and self.button == 273:
                 self.rect.y += self.speed
+        self.change_room()
+        if self.current_health <= 0:
+            self.delete(player)
+        if self.gun.ammo == 0 and pygame.time.get_ticks() - self.cooldown >= 2000:
+            self.gun.reload()
+
+    def change_room(self):
         if self.rect.x + prop_width < 0:
             current_room[1] -= 1
             x, y = current_room
@@ -158,10 +172,14 @@ class Player(Prop):
             x, y = current_room
             current_floor[x][y].load()
             self.rect.y = 70
-        if self.current_health <= 0:
-            self.delete(player)
 
+    def shoot(self, x, y):
+        if pygame.time.get_ticks() - self.cooldown >= 500 and self.gun.ammo != 0:
+            Bullet(self.rect.x + (prop_width // 2), self.rect.y + (prop_height // 2), x, y)
+            self.cooldown = pygame.time.get_ticks()
+            self.gun.lose()
 
+        
 class Cursor(Prop):
     def __init__(self, x, y):
         image = load_image('aim.png', -1)
@@ -186,8 +204,8 @@ class Bullet(Prop):
             self.delete(player)
 
     def update(self, *args):
-        if pygame.sprite.spritecollideany(self, walls) \
-                or pygame.sprite.spritecollideany(self, en_props):
+        if pygame.sprite.spritecollideany(self, walls) or\
+                pygame.sprite.spritecollideany(self, en_props):
             self.delete(bullets)
         self.move()
 
@@ -201,14 +219,19 @@ class Enemy(Prop):
         self.damage = damage
         self.group = group
 
+        self.cooldown = pygame.time.get_ticks()
+        self.bar = HealthBar(self)
+
     def update(self, *args):
         if pygame.sprite.spritecollideany(self, bullets):
             self.current_health -= 1
         if self.current_health <= 0:
             self.delete(self.group)
-        if pygame.sprite.spritecollideany(self, player):
+        if pygame.sprite.spritecollideany(self, player) and\
+                pygame.time.get_ticks() - self.cooldown >= 1000:
             for sub in player.spritedict:
                 sub.current_health -= self.damage
+            self.cooldown = pygame.time.get_ticks()
 
     def hunt(self, x, y):
         vector = count_vectors(self.rect.x, self.rect.y, x, y, 2)
@@ -219,7 +242,7 @@ class Enemy(Prop):
 
 class Boss(Enemy):
     def __init__(self, group, x, y, image):
-        super().__init__(group, x, y, 20, 5, image)
+        super().__init__(group, x, y, 20, 2, image)
 
     def update(self, *args):
         if pygame.sprite.spritecollideany(self, bullets):
@@ -233,9 +256,12 @@ class Boss(Enemy):
                 init()
                 current_room = [5, 1]
                 current_floor[5][1].load()
-        if pygame.sprite.spritecollideany(self, player):
+                game()
+        if pygame.sprite.spritecollideany(self, player) and \
+                pygame.time.get_ticks() - self.cooldown >= 1000:
             for sub in player.spritedict:
                 sub.current_health -= self.damage
+            self.cooldown = pygame.time.get_ticks()
 
 
 class Wall(Prop):
